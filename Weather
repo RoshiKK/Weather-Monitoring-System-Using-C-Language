@@ -1,0 +1,55 @@
+#include <stdio.h>
+#include <curl/curl.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+
+struct WeatherData {
+    double temperature;
+    char weather[50];
+    double humidity;
+};
+
+// Callback function to handle the HTTP response
+static size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata) {
+    size_t total_size = size * nmemb;
+    struct WeatherData *data = (struct WeatherData *)userdata;
+    // Keys to identify data in the JSON response
+    const char *temp_key = "\"temp_c\":";
+    const char *weather_key = "\"text\":\"";
+    const char *humidity_key = "\"humidity\":";
+    // Extract data from the JSON response
+    char *temp_ptr = strstr(ptr, temp_key);
+    char *weather_ptr = strstr(ptr, weather_key);
+    char *humidity_ptr = strstr(ptr, humidity_key);
+    if (temp_ptr && weather_ptr && humidity_ptr) {
+        sscanf(temp_ptr + strlen(temp_key), "%lf", &data->temperature);
+        sscanf(weather_ptr + strlen(weather_key), "%49[^\",]", data->weather);
+        sscanf(humidity_ptr + strlen(humidity_key), "%lf", &data->humidity);
+    }
+    return total_size;
+}
+
+void retrieveEnvironmentalData(const char *city) {
+    CURL *curl;
+    CURLcode res;
+    struct WeatherData weather;
+    curl = curl_easy_init();
+    if (curl) {
+        const char *api_key = "760e150f60374f68a0e185511231912";
+        char url[256];
+        snprintf(url, sizeof(url), "http://api.weatherapi.com/v1/current.json?key=%s&q=%s&aqi=yes", api_key, city);
+
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &weather);
+
+        res = curl_easy_perform(curl);
+        if (res != CURLE_OK) {
+            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+        }
+        else {
+            printf("City Name: %s\n", city);
+            printf("Temperature: %.2f Celsius\n", weather.temperature);
+            printf("Weather: %s\n", weather.weather);
+            printf("Humidity: %.2f%%\n", weather.humidity);
