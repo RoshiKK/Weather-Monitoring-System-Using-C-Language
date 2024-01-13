@@ -53,3 +53,62 @@ void retrieveEnvironmentalData(const char *city) {
             printf("Temperature: %.2f Celsius\n", weather.temperature);
             printf("Weather: %s\n", weather.weather);
             printf("Humidity: %.2f%%\n", weather.humidity);
+            // Creating filenames with timestamp
+            time_t current_time;
+            char timestamp[50];
+            current_time = time(NULL);
+            strftime(timestamp, sizeof(timestamp), "%Y%m%d%H%M%S", localtime(&current_time));
+            char raw_data_filename[100];
+            char processed_data_filename[100];
+            snprintf(raw_data_filename, sizeof(raw_data_filename), "raw_data_%s.txt", timestamp);
+            snprintf(processed_data_filename, sizeof(processed_data_filename), "processed_data_%s.txt", timestamp);
+
+            //Opening files for raw_data and process_data
+            FILE *raw_data_file = fopen(raw_data_filename, "w");
+            FILE *processed_data_file = fopen(processed_data_filename, "w");
+
+            if (raw_data_file == NULL || processed_data_file == NULL) {
+                fprintf(stderr, "Error opening files.\n");
+                return;
+            }
+            fprintf(raw_data_file, "City Name: %s\n", city);
+            fprintf(raw_data_file, "Temperature: %.2f Celsius\n", weather.temperature);
+            fprintf(raw_data_file, "Weather: %s\n", weather.weather);
+            fprintf(raw_data_file, "Humidity: %.2f%%\n", weather.humidity);
+            // For demonstration purposes, let's say processed data is the same as raw data
+            fprintf(processed_data_file, "City Name: %s\n", city);
+            fprintf(processed_data_file, "Temperature: %.2f Celsius\n", weather.temperature);
+            fprintf(processed_data_file, "Weather: %s\n", weather.weather);
+            fprintf(processed_data_file, "Humidity: %.2f%%\n", weather.humidity);
+
+            // CIf else conditions for alert
+            if (weather.temperature > 25.0) {
+                printf("High temperature alert!\n");
+                printf("Temperature exceeds 25.0 Celsius\n");
+                system("notify-send 'High Temperature Alert!' 'Temperature exceeds 25.0 Celsius'");
+            }
+            else if (weather.temperature < 15.0) {
+                printf("Low temperature alert!\n");
+                printf("Temperature is below 15.0 Celsius\n");
+                system("notify-send 'Low Temperature Alert!' 'Temperature is below 15.0 Celsius'");
+            }
+            else {
+                printf("Normal temperature range.\n");
+            }
+            printf("Environmental data retrieved and stored.\n");
+            fclose(raw_data_file);
+            fclose(processed_data_file);
+            //This is code for shell script integration
+            char shell_command[256];
+            snprintf(shell_command, sizeof(shell_command), "./process_data.sh %s", city);
+            system(shell_command);
+        }
+        curl_easy_cleanup(curl);
+    }
+}
+
+int main() {
+    const char city[] = "Karachi";
+    retrieveEnvironmentalData(city);
+    return 0;
+}
